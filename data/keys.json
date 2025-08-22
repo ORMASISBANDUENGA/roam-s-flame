@@ -1,0 +1,18 @@
+{
+  "openai": [
+    { "key": "sk-xxxx", "models": ["gpt-4", "gpt-3.5-turbo"] },
+    { "key": "sk-yyyy", "models": ["gpt-4", "gpt-3.5-turbo"] }
+  ],
+  "openrouter": [
+    { "key": "or-xxxx", "models": ["openrouter/gpt-3.5", "openrouter/mistral"] }
+  ],
+  "gemini": [
+    { "key": "gem-xxxx", "models": ["gemini-pro", "gemini-pro-vision"] }
+  ],
+  "cohere": [
+    { "key": "coh-xxxx", "models": ["command-r", "command-r-plus"] }
+  ],
+  "ai21": [
+    { "key": "ai21-xxxx", "models": ["j2-ultra", "j2-light"] }
+  ]
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "educator",
+    "title": "Professeur intelligent",
+    "prompt": "Explique ce sujet comme si je suis un élève de 12 ans."
+  },
+  {
+    "id": "resumeur",
+    "title": "Résumé rapide",
+    "prompt": "Fais-moi un résumé de ce texte en 3 points."
+  },
+  {
+    "id": "critiqueur",
+    "title": "Critique constructive",
+    "prompt": "Analyse ce contenu et propose des améliorations."
+  }
+]

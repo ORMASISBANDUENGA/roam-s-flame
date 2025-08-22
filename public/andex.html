@@ -1,0 +1,42 @@
+﻿<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Roam’s Flamme Bot</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 2rem auto; padding: 1rem; background: #f9f9f9; }
+    textarea, button { width: 100%; margin-top: 1rem; font-size: 1rem; }
+    .response { margin-top: 1.5rem; white-space: pre-wrap; background: #fff; padding: 1rem; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h2>💬 Parlez à Roam’s Flamme</h2>
+  <textarea id="message" rows="4" placeholder="Tapez votre message ici..."></textarea>
+  <button onclick="envoyer()">Envoyer</button>
+  <div class="response" id="reponse"></div>
+
+  <script>
+    async function envoyer() {
+      const message = document.getElementById('message').value;
+      const resElem = document.getElementById('reponse');
+      resElem.textContent = "⏳ Réponse en cours...";
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+        if (data.response) {
+          resElem.innerHTML = `<strong>${data.provider.toUpperCase()}</strong> : ${data.response}`;
+        } else {
+          resElem.textContent = "❌ Erreur : " + (data.error || "Aucune réponse");
+        }
+      } catch (err) {
+        resElem.textContent = "❌ Erreur de connexion au serveur.";
+      }
+    }
+  </script>
+</body>
+</html>

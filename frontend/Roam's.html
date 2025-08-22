@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roam's 🔥 Assistant IA</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(to right, #141e30, #243b55);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .container {
+    background-color: #1f2a38;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    width: 90%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  h1 {
+    text-align: center;
+    color: #ff6b6b;
+    background-color: peachpuff;
+    border: 5px ridge #f046bf;
+    width: 70%;
+    margin: 0 auto 10px;
+    padding: 10px;
+    border-radius: 5px;
+  }
+  .chat-box {
+    background: #2e3d55;
+    height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .input-area {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .input-area input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #aaa;
+  }
+  button {
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  button:hover { background-color: #ff3f3f; }
+  .message {
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 80%;
+  }
+  .message.bot { background-color: #4a69bd; align-self: flex-start; }
+  .message.user { background-color: #38ada9; align-self: flex-end; }
+  .sidebar {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔥 Roam's Assistant</h1>
+
+  <div class="sidebar">
+    <button onclick="resetChat()" title="Réinitialiser">🔄</button>
+    <button onclick="toggleVoice()" title="Vocal">🔊</button>
+    <button onclick="exportHistory()" title="Exporter">📁</button>
+    <button onclick="toggleDevMode()" title="Dev">⚙️</button>
+  </div>
+
+  <div class="chat-box" id="chat-box">
+    <div class="message bot">Salut ! Je suis Roam's, ton assistant intelligent 🔥</div>
+  </div>
+
+  <div class="input-area">
+    <button onclick="startListening()">🎤</button>
+    <input type="text" id="user-input" placeholder="Pose-moi une question..." />
+    <button onclick="document.getElementById('fileInput').click()">📎</button>
+    <input type="file" id="fileInput" style="display:none" />
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+</div>
+
+<script>
+let recognizing = false;
+let synth = window.speechSynthesis;
+let recognition;
+let voiceEnabled = true;
+let devMode = false;
+
+const input = document.getElementById('user-input');
+const chatBox = document.getElementById('chat-box');
+
+if ('webkitSpeechRecognition' in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.lang = 'fr-FR';
+  recognition.interimResults = false;
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    input.value = transcript;
+    sendMessage();
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Speech recognition error", event);
+  };
+}
+
+function startListening() {
+  if (!recognition) return alert("Reconnaissance vocale non supportée");
+  if (recognizing) {
+    recognition.stop();
+    recognizing = false;
+  } else {
+    recognition.start();
+    recognizing = true;
+  }
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  alert("Mode vocal : " + (voiceEnabled ? "activé" : "désactivé"));
+}
+
+function toggleDevMode() {
+  devMode = !devMode;
+  alert("Mode développeur : " + (devMode ? "ON" : "OFF"));
+}
+
+function speak(text) {
+  if (!voiceEnabled || !synth) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'fr-FR';
+  synth.speak(utter);
+}
+
+function sendMessage() {
+  const message = input.value.trim();
+  if (!message) return;
+  addMessage('user', message);
+  input.value = "";
+
+  fetch("http://localhost:3000/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  })
+  .then(response => response.json())
+ .then(data => {
+  const response = data.response || "❌ Aucune réponse.";
+  addMessage('bot', response);
+  speak(response);
+  saveToHistory(`👤: ${message}\n🤖: ${response}\n`);
+})
+  .catch(error => {
+    console.error("Erreur API :", error);
+    const failMsg = "❌ Erreur de connexion avec l'IA.";
+    addMessage('bot', failMsg);
+    speak(failMsg);
+  });
+}
+
+function addMessage(role, text) {
+  const msg = document.createElement('div');
+  msg.className = 'message ' + role;
+  msg.textContent = text;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function resetChat() {
+  chatBox.innerHTML = "";
+  localStorage.removeItem('chatHistory');
+}
+
+function saveToHistory(text) {
+  let history = localStorage.getItem('chatHistory') || '';
+  history += text + "\n";
+  localStorage.setItem('chatHistory', history);
+}
+
+function exportHistory() {
+  const data = localStorage.getItem('chatHistory') || '';
+  const blob = new Blob([data], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'conversation.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Roam's Flamme AI</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; background: #f9f9f9; }
+    textarea, button { width: 100%; margin-top: 1em; padding: 1em; }
+    #response { margin-top: 1em; background: #fff; padding: 1em; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Pose ta question</h1>
+  <textarea id="message" rows="5" placeholder="Tape ta question ici..."></textarea>
+  <button onclick="sendMessage()">Envoyer</button>
+  <div id="response"></div>
+
+  <script>
+    async function sendMessage() {
+      const msg = document.getElementById("message").value;
+      const resBox = document.getElementById("response");
+      resBox.innerText = "? Chargement...";
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg }),
+        });
+        const data = await response.json();
+        resBox.innerText = data.response || "? Aucune réponse.";
+      } catch (err) {
+        resBox.innerText = "? Erreur serveur.";
+      }
+    }
+  </script>
+</body>
+</html>

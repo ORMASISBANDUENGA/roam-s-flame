@@ -1,0 +1,222 @@
+<!DOCTYPE html><html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roam's.ai - Chatbot</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+
+    :root {
+      --bg: #f4f4f4;
+      --text: #222;
+      --primary: #5c67f2;
+      --bot-bg: #e1e1ff;
+      --user-bg: #c1ffd7;
+    }
+    body {
+      margin: 50;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .chat-wrapper {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 60px;
+      background: #333;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0;
+      gap: 15px;
+    }
+    .sidebar button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    .chat-box {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 80%;
+    }
+    .bot {
+      background: var(--bot-bg);
+      align-self: flex-start;
+    }
+    .user {
+      background: var(--user-bg);
+      align-self: flex-end;
+    }
+    .input-area {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+    }
+    .input-area button,
+    .input-area input {
+      margin: 0 5px;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-wrapper">
+    <div class="sidebar">
+      <button onclick="resetChat()" title="Réinitialiser">🔄</button>
+      <button onclick="toggleVoice()" title="Vocal">🔊</button>
+      <button onclick="exportHistory()" title="Exporter">📁</button>
+      <button onclick="toggleDevMode()" title="Dev">⚙️</button>
+    </div>
+    <div class="main">
+      <div class="header">Roam's.ai Chatbot</div>
+      <div class="chat-box" id="chat"></div>
+      <div class="input-area">
+        <button onclick="startListening()">🎤</button>
+        <input id="userInput" placeholder="Pose ta question..." onkeydown="if(event.key==='Enter') sendMessage()">
+        <button onclick="document.getElementById('fileInput').click()">📎</button>
+        <input type="file" id="fileInput" style="display:none">
+        <button onclick="sendMessage()">➡️</button>
+      </div>
+    </div>
+  </div>  <script>
+    let recognizing = false;
+    let synth = window.speechSynthesis;
+    let recognition;
+    let voiceEnabled = true;
+    let devMode = false;
+
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.lang = 'fr-FR';
+      recognition.interimResults = false;
+
+      recognition.onresult = function (event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('userInput').value = transcript;
+        sendMessage();
+      };
+
+      recognition.onerror = function (event) {
+        console.error("Speech recognition error", event);
+      };
+    }
+
+    function startListening() {
+      if (!recognition) return alert("Reconnaissance vocale non supportée");
+      if (recognizing) {
+        recognition.stop();
+        recognizing = false;
+      } else {
+        recognition.start();
+        recognizing = true;
+      }
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      alert("Mode vocal : " + (voiceEnabled ? "activé" : "désactivé"));
+    }
+
+    function toggleDevMode() {
+      devMode = !devMode;
+      alert("Mode développeur : " + (devMode ? "ON" : "OFF"));
+    }
+
+    function speak(text) {
+      if (!voiceEnabled || !synth) return;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'fr-FR';
+      synth.speak(utter);
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('userInput');
+      const message = input.value.trim();
+      if (!message) return;
+      addMessage('user', message);
+      input.value = "";
+
+      fetch("http://localhost:3000/api/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ message })
+})
+.then(response => response.json())
+.then(data => {
+  const response = data.response || "❌ Aucune réponse.";
+  addMessage('bot', response);
+  speak(response);
+  saveToHistory(`👤: ${message}\n🤖: ${response}\n`);
+})
+.catch(error => {
+  console.error("Erreur API :", error);
+  const failMsg = "❌ Erreur de connexion avec l'IA.";
+  addMessage('bot', failMsg);
+  speak(failMsg);
+});
+    }
+
+    function addMessage(role, text) {
+      const msg = document.createElement('div');
+      msg.className = 'message ' + role;
+      msg.textContent = text;
+      document.getElementById('chat').appendChild(msg);
+      document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+    }
+
+    function resetChat() {
+      document.getElementById('chat').innerHTML = "";
+      localStorage.removeItem('chatHistory');
+    }
+
+    function saveToHistory(text) {
+      let history = localStorage.getItem('chatHistory') || '';
+      history += text + "\n";
+      localStorage.setItem('chatHistory', history);
+    }
+
+    function exportHistory() {
+      const data = localStorage.getItem('chatHistory') || '';
+      const blob = new Blob([data], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'conversation.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script></body>
+</html>

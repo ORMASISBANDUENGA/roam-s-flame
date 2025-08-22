@@ -1,0 +1,23 @@
+[
+  {
+    "id": "gpt-4o",
+    "name": "GPT-4o",
+    "provider": "OpenAI",
+    "cost": 0.01,
+    "type": "chat"
+  },
+  {
+    "id": "claude-sonnet",
+    "name": "Claude 3 Sonnet",
+    "provider": "OpenRouter",
+    "cost": 0.005,
+    "type": "chat"
+  },
+  {
+    "id": "gemini-pro",
+    "name": "Gemini Pro",
+    "provider": "Gemini",
+    "cost": 0.002,
+    "type": "chat"
+  }
+]
