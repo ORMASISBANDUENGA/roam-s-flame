@@ -1,1 +1,2 @@
-# Roam's.ai Backend
+roam-s-flame
+intelligent et assistant personnel
